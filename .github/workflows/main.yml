@@ -38,6 +38,12 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Set image name to lowercase
+        id: image_name
+        run: |
+          IMAGE_NAME="${{ env.IMAGE_NAME }}"
+          echo "name=${IMAGE_NAME,,}" >> $GITHUB_OUTPUT
+
       - name: Debug trigger
         run: |
           echo "Event: ${{ github.event_name }}"
@@ -68,22 +74,23 @@ jobs:
         id: docker_tags
         run: |
           TAGS=""
+          IMAGE_NAME="${{ steps.image_name.outputs.name }}"
           
           # Add branch-specific tags
           if [[ "${{ github.ref_name }}" == "main" || "${{ github.ref_name }}" == "master" ]]; then
             # For main/master branch, add latest tag
-            TAGS="$TAGS ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+            TAGS="$TAGS ${{ env.REGISTRY }}/${IMAGE_NAME}:latest"
           elif [[ "${{ github.ref_name }}" == "dev" ]]; then
             # For dev branch
-            TAGS="$TAGS ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev"
+            TAGS="$TAGS ${{ env.REGISTRY }}/${IMAGE_NAME}:dev"
           elif [[ "${{ github.ref_type }}" == "branch" ]]; then
             # For other branches
-            TAGS="$TAGS ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}"
+            TAGS="$TAGS ${{ env.REGISTRY }}/${IMAGE_NAME}:${{ github.ref_name }}"
           fi
           
           # Add sha tag for all branches
           if [[ "${{ github.ref_type }}" == "branch" ]]; then
-            TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${GITHUB_SHA::7}"
+            TAGS="$TAGS,${{ env.REGISTRY }}/${IMAGE_NAME}:sha-${GITHUB_SHA::7}"
           fi
           
           # Add version tag for tagged releases
@@ -91,11 +98,11 @@ jobs:
             VERSION="${{ github.ref_name }}"
             
             # Add full version tag
-            TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION"
+            TAGS="$TAGS,${{ env.REGISTRY }}/${IMAGE_NAME}:$VERSION"
           fi
           
           # Add date tag for all builds
-          TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.date.outputs.date }}"
+          TAGS="$TAGS,${{ env.REGISTRY }}/${IMAGE_NAME}:${{ steps.date.outputs.date }}"
           
           # Remove leading space or comma if present
           TAGS=$(echo "$TAGS" | sed 's/^[ ,]*//')
