@@ -64,9 +64,9 @@ type OrderedRouter struct {
 
 // OrderedTLSConfig represents TLS config for a router with Pangolin's field order.
 type OrderedTLSConfig struct {
-	CertResolver string   `json:"certResolver,omitempty"`
-	Domains      []string `json:"domains,omitempty"`
-	Options      string   `json:"options,omitempty"`
+	CertResolver string        `json:"certResolver,omitempty"`
+	Domains      []interface{} `json:"domains,omitempty"`
+	Options      string        `json:"options,omitempty"`
 }
 
 // OrderedMiddleware represents a middleware with Pangolin's field order.
@@ -1257,17 +1257,17 @@ func (cp *ConfigProxy) mapToOrderedTLS(tls map[string]interface{}) *OrderedTLSCo
 		ordered.CertResolver = cr
 	}
 
-	// Domains
+	// Domains - can be []string or []object (with main/sans fields)
 	if domains, ok := tls["domains"]; ok {
 		switch v := domains.(type) {
 		case []interface{}:
-			for _, d := range v {
-				if s, ok := d.(string); ok {
-					ordered.Domains = append(ordered.Domains, s)
-				}
-			}
-		case []string:
+			// Preserve original format as-is (strings or objects)
 			ordered.Domains = v
+			// case []string:
+			// 	// Convert []string to []interface{}
+			// 	for _, s := range v {
+			// 		ordered.Domains = append(ordered.Domains, s)
+			// 	}
 		}
 	}
 
